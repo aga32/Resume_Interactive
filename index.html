@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Interactive Resume Game</title>
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      margin: 0;
+      display: flex;
+      height: 100vh;
+      background-color: #f9f9f9;
+    }
+    #game-container {
+      width: 40%;
+      background: lightsteelblue;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      border-right: 2px solid #ccc;
+      padding: 10px;
+      color: #333;
+      text-align: center;
+    }
+    canvas {
+      border: 1px solid #333;
+      margin-top: 10px;
+      border-radius: 8px;
+    }
+    #resume-container {
+      width: 60%;
+      padding: 20px;
+      overflow-y: auto;
+      background: white;
+      display: none;
+    }
+    #resume-content {
+      font-family: 'Poppins', sans-serif;
+      line-height: 1.4;
+    }
+    .right-align-date {
+      float: right;
+      color: #666;
+      font-weight: bold;
+    }
+    #controls {
+      text-align: center;
+      margin-top: 15px;
+    }
+    button {
+      margin: 10px;
+      padding: 12px 24px;
+      font-size: 16px;
+      cursor: pointer;
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      transition: background 0.3s;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+    #progress-container {
+      margin-top: 15px;
+      width: 300px;
+      background-color: #ddd;
+      height: 10px;
+      border-radius: 5px;
+      position: relative;
+    }
+    #progress-bar {
+      width: 0;
+      height: 100%;
+      background: #4caf50;
+      border-radius: 5px;
+    }
+    #progress-percentage {
+      position: absolute;
+      top: -20px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 14px;
+    }
+    .game-over {
+      font-size: 18px;
+      color: red;
+      margin-top: 10px;
+    }
+    .congratulations {
+      font-size: 18px;
+      color: green;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div id="game-container">
+    <h1 style="font-size: 28px;">Aleyna Aydin</h1>
+    <h2 style="font-size: 22px; color: #007bff;">Resume Snake</h2>
+    <p style="font-size: 16px; max-width: 90%;">Use the arrow keys to reveal sections of my resume. Avoid walls and your tail!</p>
+    <canvas id="gameCanvas" width="300" height="300"></canvas>
+    <div id="controls">
+      <button onclick="startGame()">Start Game</button>
+      <button onclick="showFullResume()">Show Full Resume</button>
+    </div>
+    <div id="progress-container">
+      <div id="progress-bar"></div>
+      <span id="progress-percentage">0%</span>
+    </div>
+    <div id="game-status" class="game-over" style="display: none;">Game Over</div>
+    <div id="congratulations" class="congratulations" style="display: none;">Congratulations! You've unlocked the entire resume.</div>
+  </div>
+
+  <div id="resume-container">
+    <div id="resume-content"></div>
+  </div>
+
+  <script>
+    const resumeInfo = [
+      "<strong>Aleyna Aydin | (570) 807-9936 | <a href='mailto:aga32@njit.edu'>aga32@njit.edu</a> | <a href='https://www.linkedin.com/in/aleyna-aydin-363806228' target='_blank'>LinkedIn</a> | <a href='https://github.com/aga32' target='_blank'>GitHub</a></strong>",
+      "<strong>Education: New Jersey Institute of Technology <span class='right-align-date'>Newark, NJ</span></strong>",
+      "Master of Science: Cyber Security and Privacy <span class='right-align-date'>Dec 2024</span>",
+      "Bachelor of Science: Computer Science <span class='right-align-date'>Dec 2023</span>",
+      "<strong>Work Experience:</strong>", 
+      "<b>Volunteer: LTP Website Security <span class='right-align-date'>June 2024 - Present</span></b>",
+      "  - Collaborated on the development of a website for a social media platform using HTML, CSS, and WordPress, resulting in increased user engagement, boosted platform traffic, and improved user retention",
+      "  - Enhanced website security and mitigated cyber threats by implementing firewall security using Jetpack and Cloudflare on WordPress", 
+      "  - Crafted an enriched user experience by designing the UI/UX of the website using Figma and Miro, leading to elevated user satisfaction scores", 
+      "<b>Cyber Security Analyst Intern: Verizon <span class='right-align-date'>June 2023 - Aug 2023</span></b>",
+      "  - Utilized the Tenable platform to detect and mitigate vulnerabilities within internal software, proactively preventing potential threats",
+      "  - Revolutionized daily database scanning process via Python automation, leveraging MySQL and Oracle SQL libraries to double efficiency while preserving valuable human resources",
+      "  - Managed and optimized network facilities using LAN monitoring tools, resulting in a 20% enhancement in network efficiency",
+      "<b>Cyber Security Analyst Intern: Horizon BCBS <span class='right-align-date'>June 2022 - Aug 2022</span></b>",
+      "  - Identified and mitigated phishing attempts within the company email platform through the use of Cofense email scanning software and security monitoring tools, resulting in enhanced email security measures",
+      "  - Proposed and reformed the ticketing system to aid in creating a company-wide geofence.",
+      "  - Developed a custom Splunk dashboard to assess daily risks and vulnerabilities, leading to a 30% increase in risk visibility and enhanced efficiency in threat detection, focusing on evaluating risk levels and vulnerability trends",
+      "  - Examined network traffic between company resources and foreign entities utilizing Excel to quantify and enhance network safety, resulting in a significant reduction in security vulnerabilities",
+      "<strong>Extracurricular Activities:</strong>", 
+      "<b>Fundraising Chair: Habitat for Humanity <span class='right-align-date'>May 2020 - May 2023</span></b>", 
+      "  - Planned and coordinated fundraising events using Eventbrite for ticketing and promotion via Social Media and Email Campaigns",
+      "  - Established and nurtured relationships with donors and other NJIT organizations through strategic meetings, engaging events, and targeted email campaigns leveraging LinkedIn, and networking events",
+      "  - Maintained and analyzed spending and financial data using Excel for accurate reporting and tracking",
+      "  - Collaborated with community members to strategize, execute, and participate in events, resulting in increased event attendance by leveraging Eventbrite and Google Calendar",
+      "<strong>Core Proficiencies:</strong> Python | Java | C | SQL | HTML | Linux | VMWare | Relational Databases | Network Security | Threat Detection/Mitigation | Git | Microsoft Office Applications",
+    ];
+
+    let canvas = document.getElementById("gameCanvas");
+    let ctx = canvas.getContext("2d");
+    let boxSize = 20;
+    let snake = [{ x: 100, y: 100 }];
+    let direction = null;
+    let food = generateFood();
+    let score = 0;
+    let gameActive = false;
+
+    const progressBar = document.getElementById("progress-bar");
+    const progressPercentage = document.getElementById("progress-percentage");
+
+    function startGame() {
+      document.getElementById("resume-container").style.display = "none";
+      document.getElementById("resume-content").innerHTML = "";
+      document.getElementById("game-status").style.display = "none";
+      document.getElementById("congratulations").style.display = "none";
+      direction = null;
+      snake = [{ x: 100, y: 100 }];
+      food = generateFood();
+      score = 0;
+      updateProgress();
+      gameActive = true;
+      drawGame();
+    }
+
+    function showFullResume() {
+      document.getElementById("resume-container").style.display = "block";
+      document.getElementById("resume-content").innerHTML = resumeInfo.join("<br><br>");
+      gameActive = false;
+    }
+
+    function drawGame() {
+      if (!gameActive) return;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      drawSnake();
+      drawFood();
+      if (direction) moveSnake();
+      checkCollision();
+      setTimeout(drawGame, 150); // Slowed game speed from 100ms to 150ms
+    }
+
+    function drawSnake() {
+      ctx.fillStyle = "black";
+      snake.forEach(part => ctx.fillRect(part.x, part.y, boxSize, boxSize));
+    }
+
+    function drawFood() {
+      ctx.fillStyle = "red";
+      ctx.fillRect(food.x, food.y, boxSize, boxSize);
+    }
+
+    function moveSnake() {
+      let head = { ...snake[0] };
+      if (direction === "RIGHT") head.x += boxSize;
+      if (direction === "LEFT") head.x -= boxSize;
+      if (direction === "UP") head.y -= boxSize;
+      if (direction === "DOWN") head.y += boxSize;
+      snake.unshift(head);
+
+      if (head.x === food.x && head.y === food.y) {
+        score++;
+        revealInfo();
+        food = generateFood();
+        updateProgress();
+      } else {
+        snake.pop();
+      }
+    }
+
+    function generateFood() {
+      return {
+        x: Math.floor(Math.random() * (canvas.width / boxSize)) * boxSize,
+        y: Math.floor(Math.random() * (canvas.height / boxSize)) * boxSize
+      };
+    }
+
+    function checkCollision() {
+      let head = snake[0];
+      if (
+        head.x < 0 || head.y < 0 ||
+        head.x >= canvas.width || head.y >= canvas.height ||
+        snake.slice(1).some(part => part.x === head.x && part.y === head.y)
+      ) {
+        document.getElementById("game-status").style.display = "block";
+        gameActive = false;
+      }
+    }
+
+    function revealInfo() {
+      if (score - 1 < resumeInfo.length) {
+        const content = resumeInfo[score - 1];
+        document.getElementById("resume-content").innerHTML += `<p>${content}</p>`;
+        document.getElementById("resume-container").style.display = "block";
+      }
+      if (score === resumeInfo.length) {
+        document.getElementById("congratulations").style.display = "block";
+        gameActive = false;
+      }
+    }
+
+    function updateProgress() {
+      const progress = (score / resumeInfo.length) * 100;
+      progressBar.style.width = `${progress}%`;
+      progressPercentage.textContent = `${Math.round(progress)}%`;
+    }
+
+    window.addEventListener("keydown", event => {
+      if (event.key === "ArrowRight" && direction !== "LEFT") direction = "RIGHT";
+      if (event.key === "ArrowLeft" && direction !== "RIGHT") direction = "LEFT";
+      if (event.key === "ArrowUp" && direction !== "DOWN") direction = "UP";
+      if (event.key === "ArrowDown" && direction !== "UP") direction = "DOWN";
+    });
+  </script>
+</body>
+</html>
